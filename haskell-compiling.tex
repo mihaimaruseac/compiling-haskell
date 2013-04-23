@@ -1,0 +1,663 @@
+\documentclass{beamer}
+
+\usepackage{color}			 % highlight
+\usepackage{alltt}			 % highlight
+\usepackage{code/highlight}	 % highlight
+
+\usepackage{hyperref}
+\mode<presentation>
+
+\title{Compiling Haskell for Performance}
+\author{Mihai Maruseac, ROSEdu\\mihai@rosedu.org}
+
+\setbeamertemplate{frametitle continuation}[from second]
+\setbeamertemplate{footline}[frame number]
+
+\pgfdeclareimage[height=7cm]{pong}{img/pong}
+\pgfdeclareimage[height=6cm]{mightynginx}{img/mightynginx}
+\pgfdeclareimage[height=6cm]{pipes}{img/1m1bpipes}
+\pgfdeclareimage[height=6cm]{scalability}{img/scalability}
+\pgfdeclareimage[height=6cm]{delay}{img/threaddelay}
+\pgfdeclareimage[height=4cm]{rts}{img/rts}
+\pgfdeclareimage[height=3cm]{native}{img/native}
+\pgfdeclareimage[height=3cm]{event}{img/event}
+\pgfdeclareimage[height=3cm]{ppc}{img/ppc}
+\pgfdeclareimage[height=3cm]{green}{img/green}
+\pgfdeclareimage[height=6cm]{mail}{img/mail}
+\pgfdeclareimage[height=6cm]{old}{img/old}
+\pgfdeclareimage[height=6cm]{new}{img/new}
+\pgfdeclareimage[height=7cm]{pipeline}{img/pipeline}
+\pgfdeclareimage[height=3cm]{unpack}{img/unpack}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}{What is Haskell?}
+  \begin{itemize}
+    \item functional programming language
+    \item 1990, academic research committee
+    \item common language for research
+    \pause
+    \item purely functional
+    \item lazy
+    \begin{itemize}
+      \item reasoning about program
+      \item barrier for non-functional features
+    \end{itemize}
+    \pause
+    \item strongly typed
+    \item type inference
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Usage}
+  \begin{itemize}
+    \item spread over multiple domains
+    \begin{itemize}
+      \item Maths and sciences
+      \item games
+      \item graphics
+      \item compilers
+      \item networking
+    \end{itemize}
+    \pause
+    \item declarative style
+  \end{itemize}
+  \input{code/cs.hs}
+\end{frame}
+
+\begin{frame}{Why Haskell?}
+  \begin{itemize}
+    \item declarative style
+    \pause
+    \item correctness
+    \begin{itemize}
+      \item strong static typing
+      \item pure functions
+      \item special types for impure functions
+    \end{itemize}
+    \pause
+    \item performance
+    \begin{itemize}
+      \item statically compiled
+      \item alternative to \texttt{C++} / \texttt{Java}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Community}
+  \begin{itemize}[<+->]
+    \item \#haskell
+    \item lambdabot
+    \item /r/haskell
+    \item Stack Overflow
+    \item blogs
+    \item Haskell Weekly News (HWN)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Community (2)}
+  \begin{itemize}[<+->]
+    \item Haskell Community and Activities Report (HCAR)
+    \item The Monad Reader (TMR)
+    \item Cartesian Closed Comic (CCC)
+    \item Haskell Wiki, Haskell Wikibooks
+    \item Haskellers
+    \item hpaste
+    \item hoogle, hayoo
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Famous Users}
+  \begin{itemize}[<+->]
+    \item NASA
+    \item Galois
+    \item Jane Street
+    \item Microsoft Research
+    \item Google, Facebook
+    \item \texttt{Hermit Reasoner}, \texttt{Protege}
+    \item \texttt{perl6}
+    \item new languages: \texttt{Elm}, \texttt{Idris}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{GHC}
+  \begin{itemize}
+    \item \texttt{The Glorious Glasgow Haskell Compilation System}
+    \pause
+    \item started as academic research funded by UK
+    \begin{itemize}
+      \item freely available, robust, portable compiler
+      \item high-performance code
+      \item research for better compilers (learn how programs behave)
+      \item modular foundation for other researchers
+    \end{itemize}
+    \pause
+    \item Microsoft Research
+    \item other contributors
+    \item Open Source model
+    \pause
+    \item recommended suite for Haskell development
+    \item \texttt{ghc}, \texttt{ghci}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[label=comp-pipeline]{Compiling Haskell Code}
+  \centering
+  \pgfuseimage{pipeline}
+\end{frame}
+
+\begin{frame}{Factorial Function}
+  \input{code/factorial.hs}
+\end{frame}
+
+\begin{frame}{Factorial Function}
+  \input{code/factorial-main.hs}
+\end{frame}
+
+\againframe{comp-pipeline}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Parser}
+  \input{code/factorial-main.dump-parsed.hs}
+\end{frame}
+
+\againframe{comp-pipeline}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Renamer}
+  \input{code/factorial-main.dump-renamer.hs}
+\end{frame}
+
+\againframe{comp-pipeline}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Typechecker}
+  \tiny
+  \input{code/factorial-main.dump-typechecker.hs}
+\end{frame}
+
+\againframe{comp-pipeline}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Desugarer}
+  \tiny
+  \input{code/factorial-main.dump-ds1.hs}
+\end{frame}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Desugarer}
+  \tiny
+  \input{code/factorial-main.dump-ds2.hs}
+\end{frame}
+
+\againframe{comp-pipeline}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Simplifier}
+  \tiny
+  \input{code/factorial-main.dump-simpl1.hs}
+\end{frame}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Simplifier}
+  \tiny
+  \input{code/factorial-main.dump-simpl2.hs}
+\end{frame}
+
+\againframe{comp-pipeline}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Core Preparation}
+  \tiny
+  \input{code/factorial-main.dump-prep1.hs}
+\end{frame}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Core Preparation}
+  \tiny
+  \input{code/factorial-main.dump-prep2.hs}
+\end{frame}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Core Preparation}
+  \tiny
+  \input{code/factorial-main.dump-prep3.hs}
+\end{frame}
+
+\againframe{comp-pipeline}
+
+\begin{frame}{Tracing The Compilation of Factorial :: STG}
+  \tiny
+  \input{code/factorial-main.dump-stg1.hs}
+\end{frame}
+
+\begin{frame}{Tracing The Compilation of Factorial :: STG}
+  \tiny
+  \input{code/factorial-main.dump-stg2.hs}
+\end{frame}
+
+\againframe{comp-pipeline}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Fragment of cmm output}
+  \tiny
+  \input{code/factorial-main.dump-cmm2.hs}
+\end{frame}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Fragment of cmm output}
+  \tiny
+  \input{code/factorial-main.dump-cmm1.hs}
+\end{frame}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Optimized cmm}
+  \tiny
+  \input{code/factorial-main.dump-opt-cmm.hs}
+\end{frame}
+
+\againframe{comp-pipeline}
+
+\begin{frame}{Tracing The Compilation of Factorial :: Assembly}
+  \tiny
+  \input{code/factorial-main.dump-asm.hs}
+\end{frame}
+
+\againframe{comp-pipeline}
+
+\begin{frame}{Higher Level Structure}
+  \begin{itemize}
+    \item compiler itself
+    \begin{itemize}
+      \item Haskell source code $\rightarrow$ executable \textbf{binary} code
+    \end{itemize}
+    \pause
+    \item Boot Libraries
+    \begin{itemize}
+      \item needed by compiler
+      \item bootstrapping
+      \item low level functionality: \texttt{Int} in terms of primitive types, $\ldots$
+      \item high level functionality: efficient data structures for compiler
+      and RTS
+    \end{itemize}
+    \pause
+    \item Runtime System (RTS)
+    \begin{itemize}
+      \item C library
+      \item running compiled Haskell code
+      \item garbage collection, thread scheduling, profiling, exception
+      handling, $\ldots$
+      \item linked into every compiled program
+      \item responsible for GHC's key strengths: concurrency and parallelism
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{The Runtime System}
+  \begin{itemize}
+    \item profiling
+    \item memory management
+    \item parallel, generational, garbage collector
+    \item dynamic linkage, primitive operations
+    \item thread management and scheduling
+  \end{itemize}
+  \centering
+  \pgfuseimage{rts}
+\end{frame}
+
+\begin{frame}{The Runtime System (2)}
+  \begin{itemize}[<+->]
+    \item bits to execute non-high-level Haskell code
+    \begin{itemize}
+      \item code to throw exception
+      \item code to allocate \texttt{\#Array} objects
+      \item $\ldots$
+    \end{itemize}
+    \item STM support
+    \item deterministic locking
+  \end{itemize}
+  \pause
+  \texttt{<exe>: thread blocked indefinitely in an MVar operation}
+\end{frame}
+
+\begin{frame}{Threading}
+  \begin{itemize}
+    \item concurrency = important abstraction
+    \item make it cheap, programmers avoid costly abstractions/paradigms
+    \item no thread-pools management by programmer
+    \item just works
+    \pause
+    \item OSes struggle with 1000s of threads
+    \item GHC wanted/capable to handle milions
+    \pause
+    \item models:
+    \begin{itemize}
+      \item kernel
+      \item userspace
+      \item hybrid
+    \end{itemize}
+    \pause
+    \item green-threads and sparks
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Threading (2)}
+  \begin{itemize}
+    \item context switch only at \textit{safe points}
+    \item save as little state as possible
+    \pause
+    \item accurate GC $\rightarrow$ expand/shrink thread's stack on demand
+    \item OS threads: stacks are immovable
+    \item GHC's threads: 0-copy threads
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Green-threads problems}
+  \begin{itemize}
+    \item blocking
+    \item foreign calls (FFI or library)
+    \item parallelism (run on all available cores)
+    \item library constraints
+    \begin{itemize}
+      \item OpenGL, GUI libraries: API calls done on specific threads
+      \item thread-local state
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Perseverance Paid}
+  \begin{itemize}
+    \item Haskell threads makes foreign call $\rightarrow$ OS thread for the
+    other Haskell threads
+    \item small pool of OS threads
+    \item RTS multiplexing: transparent M:N threading model
+    \pause
+    \item \textit{capabilities}:
+    \begin{itemize}
+      \item \textit{nursery} -- access to new object creation
+      \item each OS thread must hold these
+      \item each one is owned by a single OS thread
+    \end{itemize}
+    \pause
+    \item API for binding Haskell threads to OS threads
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{One Small Problem}
+  \begin{itemize}[<+->]
+    \item \textit{safe points} for context-switching
+    \item memory allocation
+    \item tight-loops -- no memory allocation
+    \item frequent in benchmarks, less frequent in actual code
+    \item no safe points $\rightarrow$ unable to schedule
+    \item compromise between saving every cycle and having scheduling
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Context Requiring Some New Manager}
+  \begin{itemize}
+    \item server applications
+    \pause
+    \item performance matters
+    \item scalability
+    \pause
+    \item majority of applications -- HTTP servers
+    \begin{itemize}
+      \item most clients are idle most of the time
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Missing Things}
+  \begin{itemize}
+    \item support for a really large number of connections
+    \item large number of active timeouts
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Native Threads}
+  \begin{center}\pgfuseimage{native}\end{center}
+  \begin{itemize}
+    \item \texttt{Apache}
+    \pause
+    \item clear code
+    \item load balancing on cores
+    \pause
+    \item many context-switches
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Event Driven}
+  \begin{center}\pgfuseimage{event}\end{center}
+  \begin{itemize}
+    \item \texttt{Lighthttpd}
+    \pause
+    \item no process switching
+    \pause
+    \item single-core usage
+    \item fragmented code
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{One Process per Core}
+  \begin{center}\pgfuseimage{ppc}\end{center}
+  \begin{itemize}
+    \item \texttt{nginx}
+    \pause
+    \item core load-balancing
+    \pause
+    \item fragmented code
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{GHC's Green Threads}
+  \begin{center}\pgfuseimage{green}\end{center}
+  \begin{itemize}
+    \item \texttt{warp}, \texttt{WAI}, \texttt{mighty}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Problems with \texttt{select}}
+  \begin{itemize}[<+->]
+    \item non-scalable
+    \item O(number of connections)
+    \item limited number of file descriptors
+    \item must iterate on file descriptor set
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{A New Haskell IO Manager}
+  \centering
+  \pgfuseimage{mail}
+\end{frame}
+
+\begin{frame}{A Scalable IO Manager}
+  \begin{itemize}
+    \item \texttt{epoll}/\texttt{kqueue} event loop
+    \item don't use lists for timeouts or other things
+    \begin{itemize}[<+->]
+      \item trees and heaps
+      \item priority queues
+      \item adjust/cancel pending timeouts
+      \item data structures specialised based on contained type
+      \item unpacked data types
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Network API}
+  \begin{itemize}
+    \item memory-mapped I/O
+    \item zero-copy transfer (\texttt{sendfile})
+    \item scatter-gather I/O (\texttt{writev})
+    \item async socket I/O API (\texttt{TCP\_CORK})
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Code Changes :: The Old Manager}
+  \centering
+  \pgfuseimage{old}
+\end{frame}
+
+\begin{frame}[label=new]{Code Changes :: The New Manager}
+  \centering
+  \pgfuseimage{new}
+\end{frame}
+
+\begin{frame}{Results :: Thread Timeout Delay}
+  \centering
+  \pgfuseimage{delay}
+\end{frame}
+
+\begin{frame}{Results :: Scalability}
+  \centering
+  \pgfuseimage{scalability}
+\end{frame}
+
+\begin{frame}{Results :: Sending 1M 1-byte Messages Through Pipes}
+  \centering
+  \pgfuseimage{pipes}
+\end{frame}
+
+\begin{frame}{Results :: Ping-Pong Benchmark}
+  \centering
+  \pgfuseimage{pong}
+\end{frame}
+
+\begin{frame}{Results :: \texttt{mighty} vs \texttt{nginx}}
+  \centering
+  \pgfuseimage{mightynginx}
+\end{frame}
+
+\begin{frame}{TODOs}
+  \begin{itemize}
+    \item Windows \pause -- \texttt{IO Completion Ports}
+    \pause
+    \item work in progress
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Other Optimization Potentials}
+  \begin{itemize}
+    \item evaluate thunks as quick as possible
+    \item strictness analysis
+    \item bang patterns
+    \item \texttt{seq} and \texttt{par} / \texttt{pseq}
+    \pause
+    \item unboxed types
+    \item reduce memory layout (\texttt{newtype}, \texttt{\{- \# UNPACK \#
+    -\}})
+  \end{itemize}
+  \pause
+  \centering
+  \pgfuseimage{unpack}
+\end{frame}
+
+\begin{frame}{Reading Core}
+  \begin{itemize}[<+->]
+    \item rename variables, move sections in editor
+    \item \texttt{ghc-core}
+    \item \texttt{ghc-core-html}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Resources}
+  \begin{itemize}
+    \item \href{http://learnyouahaskell.com/}{Learn You a Haskell}
+    \item \href{http://book.realworldhaskell.org/read/}{Real World Haskell}
+    \item \href{http://www.aosabook.org/en/ghc.html}{Architecture of Open Source Application. GHC Chapter}
+    \item \href{http://hackage.haskell.org/trac/ghc/wiki/Commentary}{GHC Commentary}
+    \item \href{https://github.com/ghc/ghc}{GHC's Source code}
+    \item \href{http://stackoverflow.com/questions/6121146/reading-ghc-core}{Stack Overflow question}
+    \item \href{http://donsbot.wordpress.com/2008/06/04/haskell-as-fast-as-c-working-at-a-high-altitude-for-low-level-performance/}{Haskell as Fast as C}
+    \item \href{http://blog.johantibell.com/2010/09/slides-from-my-high-performance-haskell.html}{High Performance Haskell}
+  \end{itemize}
+\end{frame}
+
+\section{Extra slides}
+\frame{\tableofcontents[currentsection]}
+
+\begin{frame}{Scheduler}
+  \begin{itemize}
+    \item OS threads
+    \begin{itemize}
+      \item support non-blocking foreign threads
+      \item support SMP parallelism
+      \pause
+      \item \texttt{+RTS -N} option
+      \item more might be created
+      \item kept in pool
+      \item attached to capabilities
+      \item platform-independent abstraction
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Scheduler (2)}
+  \begin{itemize}
+    \item green threads
+    \begin{itemize}
+      \item Thread State Objects
+      \item garbage collected
+      \item bound/unbound
+      \item fields
+      \begin{itemize}
+        \item \texttt{link} -- list of TSOs
+        \item \texttt{what\_next} -- what to resume
+        \item \texttt{why\_blocked} -- why is thread blocked
+        \item \texttt{bound}
+        \item \texttt{cap} -- capability
+        \item $\ldots$
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Scheduler (3)}
+  \begin{itemize}
+    \item tasks
+    \begin{itemize}
+      \item abstraction over OS thread
+      \item thread-local storage
+      \item mutex and condition variable for OS threads synchronisation
+      \item capability
+    \end{itemize}
+    \pause
+    \item capabilities
+    \begin{itemize}
+      \item virtual CPU for executing Haskell code
+      \item count should be close to the number of CPU cores
+      \item \textit{thread holding a capability -- not blocked}
+      \item spinlocks, deterministic locking
+    \end{itemize}
+    \pause
+    \item sparks
+    \begin{itemize}
+      \item for \texttt{par} operator
+      \item optimistic threading
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{GHC's Concurrency RTS}
+  \begin{itemize}
+    \item give control to the programmer
+    \item without decreasing performance or increasing complexity
+    \item lift parts of RTS to Haskell library code
+    \item concurrency substrate
+  \end{itemize}
+\end{frame}
+
+\againframe{new}
+
+\begin{frame}{Concurrency Substrate}
+  \begin{itemize}
+    \item minimal set of primitives
+    \begin{itemize}
+      \item create threads
+      \item schedule them
+      \item synchronization mechanism in multiprocessor context
+    \end{itemize}
+    \pause
+    \item user-level concurrency libraries
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{PTM}
+  \begin{itemize}
+    \item primitive transactional memory
+    \item lockless code
+  \end{itemize}
+  \input{code/ptm.hs}
+\end{frame}
+
+\end{document}
